@@ -1,0 +1,35 @@
+{
+  "name": "lab1",
+  "version": "1.0.0",
+  "description": "Скриптові мові програмування. Лабораторна робота №1. Початок роботи з Node.js.",
+  "keywords": [
+    "stu.cn",
+    "node",
+    "jest"
+  ],
+  "homepage": "https://github.com/existans/Node.js",
+  "bugs": {
+    "url": "https://github.com/existans/Node.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/existans/Node.js"
+  },
+  "license": "MIT",
+  "author": "Vladislav Petrikey",
+  "type": "commonjs",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4"
+  }
+}
