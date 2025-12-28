@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Журнал студентів</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+
+<div class="container mt-4">
+
+    <h2 class="text-center mb-4">Журнал студентів з предмету "Скриптові мови програмування"</h2>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form name="studentForm" class="row g-3">
+                <input type="hidden" name="id" value="0" />
+
+                <div class="col-md-4">
+                    <label class="form-label">Ім'я:</label>
+                    <input class="form-control" name="name" required />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Група:</label>
+                    <input class="form-control" name="group" required />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Оцінка:</label>
+                    <input class="form-control" name="grade" type="number" min="0" max="100" required />
+                </div>
+
+                <div class="col-12">
+                    <button id="saveBtn" type="submit" class="btn btn-primary">Додати</button>
+                    <button id="reset" type="button" class="btn btn-secondary">Скинути</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3">
+        <input id="search" class="form-control w-50" placeholder="Пошук по імені...">
+
+        <select id="sort" class="form-select w-25">
+            <option value="">Без сортування</option>
+            <option value="name">За ім'ям (А → Я)</option>
+            <option value="grade">За оцінкою (від більшої до меншої)</option>
+        </select>
+    </div>
+
+    <table class="table table-striped table-bordered shadow-sm bg-white">
+        <thead class="table-dark">
+        <tr>
+            <th>Id</th>
+            <th>Ім'я</th>
+            <th>Група</th>
+            <th>Оцінка</th>
+            <th style="width:140px;"></th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+    let allStudents = [];
+
+    async function loadStudents() {
+        const response = await fetch("/api/students");
+        allStudents = await response.json();
+        render(allStudents);
+    }
+
+    function render(list) {
+        const tbody = document.querySelector("tbody");
+        tbody.innerHTML = "";
+        list.forEach(s => tbody.append(row(s)));
+    }
+
+    function row(student) {
+        const tr = document.createElement("tr");
+        tr.dataset.rowid = student._id;
+
+        tr.innerHTML = `
+        <td>${student._id}</td>
+        <td>${student.name}</td>
+        <td>${student.group}</td>
+        <td>${student.grade}</td>
+        <td class="text-center">
+            <button class="btn btn-sm btn-warning me-2 edit" data-id="${student._id}">Змінити</button>
+            <button class="btn btn-sm btn-danger delete" data-id="${student._id}">Видалити</button>
+        </td>
+        `;
+
+        tr.querySelector(".edit").onclick = () => loadStudentToForm(student._id);
+        tr.querySelector(".delete").onclick = () => deleteStudent(student._id);
+
+        return tr;
+    }
+
+    async function loadStudentToForm(id) {
+        const response = await fetch("/api/students/" + id);
+        const student = await response.json();
+        const form = document.forms["studentForm"];
+
+        form.id.value = student._id;
+        form.name.value = student.name;
+        form.group.value = student.group;
+        form.grade.value = student.grade;
+
+        document.getElementById("saveBtn").textContent = "Оновити";
+    }
+
+    async function createStudent(name, group, grade) {
+        await fetch("/api/students", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ name, group, grade })
+        });
+    }
+
+    async function editStudent(id, name, group, grade) {
+        await fetch("/api/students", {
+            method: "PUT",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ id, name, group, grade })
+        });
+    }
+
+    async function deleteStudent(id) {
+        const ok = confirm("Ви дійсно бажаєте видалити цього студента?");
+        if (!ok) return;
+
+        await fetch("/api/students/" + id, { method: "DELETE" });
+        loadStudents();
+    }
+
+    document.forms["studentForm"].onsubmit = async e => {
+        e.preventDefault();
+        const form = e.target;
+
+        const id = form.id.value;
+        const name = form.name.value.trim();
+        const group = form.group.value.trim();
+        const grade = parseInt(form.grade.value);
+
+        if (id == 0) await createStudent(name, group, grade);
+        else await editStudent(id, name, group, grade);
+
+        await loadStudents();
+        resetForm();
+    };
+
+    document.getElementById("reset").addEventListener("click", resetForm);
+
+    function resetForm() {
+        const form = document.forms["studentForm"];
+        form.name.value = "";
+        form.group.value = "";
+        form.grade.value = "";
+        form.id.value = "0";
+        document.getElementById("saveBtn").textContent = "Додати";
+    }
+
+    document.getElementById("search").oninput = e => {
+        const text = e.target.value.toLowerCase();
+        const filtered = allStudents.filter(s => s.name.toLowerCase().includes(text));
+        render(filtered);
+    };
+
+    document.getElementById("sort").onchange = e => {
+        const option = e.target.value;
+        let sorted = [...allStudents];
+
+        if (option === "name") sorted.sort((a, b) => a.name.localeCompare(b.name, "uk"));
+        if (option === "grade") sorted.sort((a, b) => b.grade - a.grade);
+
+        render(sorted);
+    };
+
+    loadStudents();
+</script>
+
+</body>
+</html>
